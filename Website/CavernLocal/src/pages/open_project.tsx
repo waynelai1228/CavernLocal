@@ -6,6 +6,9 @@ export async function clientLoader() {
   try {
     const res = await fetch(`${config.API_BASE_URL}/api/projects`);
 
+    console.log(res.status);
+    console.log(res.statusText);
+
     if (!res.ok) {
       throw new Error(`Failed to fetch projects: ${res.status} ${res.statusText}`);
     }
@@ -31,6 +34,12 @@ export async function clientLoader() {
 export default function Open_Project({ loaderData }) {
   const { title, projects, error } = loaderData;
 
+  const handleRowClick = (projectId) => {
+    // Navigate to the project detail page using the project ID
+    console.log(`/project/${projectId}`);
+  };
+
+
   return (
     <>
       <div className="form-page">
@@ -41,11 +50,25 @@ export default function Open_Project({ loaderData }) {
           {error ? (
             <p style={{ color: 'red' }}>Error loading projects: {error}</p>
           ) : (
-            <ul>
-              {projects.map(project => (
-                <li key={project.id}>{project.name}</li>
-              ))}
-            </ul>
+              <table className="project-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Project Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project) => (
+                    <tr
+                      key={project.id}
+                      onClick={() => handleRowClick(project.id)}
+                    >
+                      <td>{project.id}</td>
+                      <td>{project.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
         </div>
       </div>

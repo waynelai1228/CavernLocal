@@ -56,3 +56,36 @@
   .form-status.error {
     color: red;
   }
+
+.project-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+  .project-table th,
+  .project-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  .project-table th {
+    background-color: #808080;
+    color: black;
+    text-align: left;
+  }
+
+
+  .project-table tr {
+    cursor: pointer;
+  }
+
+    .project-table tr:hover {
+      background-color: #f0f0f0; /* Change row background when hovering */
+      color: black;
+    }
+
+    .project-table tr:active {
+      background-color: #dcdcdc; /* Slightly darker on click */
+      color: black;
+    }
