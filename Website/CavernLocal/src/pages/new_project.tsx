@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./form_pages.css"
+import config from "../config";
 
 export async function clientLoader() {
     return {
@@ -15,7 +16,7 @@ export default function FormComponent({ loaderData }) {
     e.preventDefault();
 
     try {
-      const response = await fetch('/new_project', {
+      const response = await fetch(`${config.API_BASE_URL}/new_project`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

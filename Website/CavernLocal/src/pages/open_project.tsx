@@ -4,7 +4,7 @@ import config from "../config";
 // clientLoader with error handling
 export async function clientLoader() {
   try {
-    const res = await fetch(`${config.API_BASE_URL}/api/projects`);
+    const res = await fetch(`${config.API_BASE_URL}/projects`);
 
     console.log(res.status);
     console.log(res.statusText);
@@ -64,7 +64,7 @@ export default function Open_Project({ loaderData }) {
                       onClick={() => handleRowClick(project.id)}
                     >
                       <td>{project.id}</td>
-                      <td>{project.name}</td>
+                      <td>{project.project_name}</td>
                     </tr>
                   ))}
                 </tbody>
