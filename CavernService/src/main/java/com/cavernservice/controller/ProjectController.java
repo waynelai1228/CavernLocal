@@ -1,4 +1,4 @@
-package com.cavernservice.cavernservice;
+package com.cavernservice.controller;
 
 import com.cavernservice.model.Project;
 import com.cavernservice.repository.ProjectRepository;
@@ -13,8 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 import org.springframework.http.MediaType;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -23,11 +22,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.UUID;
+
 @RestController
-@SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.cavernservice.repository")
-@EntityScan(basePackages = "com.cavernservice.model")
-public class CavernserviceApplication {
+@RequestMapping("/")
+public class ProjectController {
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -43,13 +42,9 @@ public class CavernserviceApplication {
         projectRepository.save(project);
     }
 
-    @DeleteMapping(value="/delete_project")
-    void deleteProject(@RequestBody Project project) {
-        System.out.println("attempt to delete: " + project.getProjectName());
+    @DeleteMapping(value="/delete_project/{projectId}")
+    void deleteProject(@PathVariable UUID projectId) {
+        System.out.println("attempt to delete project with id: " + projectId);
+        projectRepository.deleteById(projectId);
     }
-
-	public static void main(String[] args) {
-		SpringApplication.run(CavernserviceApplication.class, args);
-	}
-
 }

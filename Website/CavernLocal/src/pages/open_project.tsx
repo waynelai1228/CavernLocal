@@ -1,5 +1,6 @@
 import "./form_pages.css";
 import config from "../config";
+import { useNavigate } from 'react-router';
 
 // clientLoader with error handling
 export async function clientLoader() {
@@ -33,9 +34,11 @@ export async function clientLoader() {
 // Component
 export default function Open_Project({ loaderData }) {
   const { title, projects, error } = loaderData;
+  const navigate = useNavigate();
 
   const handleRowClick = (projectId) => {
     // Navigate to the project detail page using the project ID
+    navigate(`/projects/${projectId}`);
     console.log(`/project/${projectId}`);
   };
 

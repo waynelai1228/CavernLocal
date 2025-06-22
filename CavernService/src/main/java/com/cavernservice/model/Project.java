@@ -6,13 +6,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.util.UUID;
 
 @Entity
 public class Project {
 
-  private @Id
-  @GeneratedValue Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  private UUID id;
   @JsonProperty("project_name")
   private String projectName;
 
@@ -22,7 +25,7 @@ public class Project {
     this.projectName = projectName;
   }
 
-  public Long getId() {
+  public UUID getId() {
     return this.id;
   }
 
@@ -30,7 +33,7 @@ public class Project {
     return this.projectName;
   }
 
-  public void setId(Long id) {
+  public void setId(UUID id) {
     this.id = id;
   }
 
