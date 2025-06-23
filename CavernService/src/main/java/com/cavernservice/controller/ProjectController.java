@@ -36,6 +36,11 @@ public class ProjectController {
         return projectRepository.findAll();
 	}
 
+    @GetMapping(value="/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    Project getProjectById(@PathVariable UUID projectId) {
+        return projectRepository.findById(projectId).get();
+    }
+
     @PostMapping(value="/new_project")
     void createNewProject(@RequestBody Project project) {
         System.out.println("project name: " + project.getProjectName());

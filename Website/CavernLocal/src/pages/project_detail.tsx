@@ -6,7 +6,7 @@ import config from "../config";
 
 interface Project {
   id: string;
-  projectName: string;
+  project_name: string;
 }
 function getErrorMessage(error: unknown): string {
   if (!error) return "";
@@ -75,12 +75,12 @@ export default function FormComponent({ loaderData }:
     <div className="form-page">
       <h1>{title}</h1>
       <div className="project-detail">
-        <label>ID:</label>
+        <label>ID: </label>
         <span>{project.id}</span>
       </div>
       <div className="project-detail">
-        <label>Project Name:</label>
-        <span>{project.projectName}</span>
+        <label>Project Name: </label>
+        <span>{project.project_name}</span>
       </div>
     </div>
   );
