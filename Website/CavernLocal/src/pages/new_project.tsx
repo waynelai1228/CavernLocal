@@ -2,12 +2,21 @@ import { useState } from "react";
 import "./form_pages.css"
 import config from "../config";
 
+interface Project {
+  id: string;
+  project_name: string;
+}
+
 export async function clientLoader() {
     return {
         title: "New Project",
     }
 }
-export default function FormComponent({ loaderData }) {
+export default function FormComponent({ loaderData }:
+  {
+    loaderData: { title: string; project: Project, error: unknown };
+  }
+) {
   const [projectName, setProjectName] = useState('');
   const [statusMessage, setStatus] = useState(String);
   const [statusType, setStatusType] = useState(String); // 'success' or 'error'
