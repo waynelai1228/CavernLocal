@@ -101,6 +101,11 @@ public class Task {
           throw new UnsupportedOperationException("BASH tasks are only supported on Linux systems.");
         }
 
+        // ******* DANGEROUS FUNCTIONALITY *********** //
+        // ** This contains OS Command Injection ** //
+        // ** Do not ever deploy to production system **//
+        // ******************************************* //
+
         // take taskAction as bash command and run it
         CommandLine cmdLine = CommandLine.parse(this.taskAction);
         String[] arguments = cmdLine.toStrings();
