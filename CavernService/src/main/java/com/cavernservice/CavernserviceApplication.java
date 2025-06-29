@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 
 @SpringBootApplication
-public class CavernserviceApplication {
+public class CavernServiceApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(CavernserviceApplication.class, args);
+		SpringApplication.run(CavernServiceApplication.class, args);
 	}
 }
