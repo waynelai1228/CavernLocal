@@ -39,9 +39,9 @@ public class ProjectController {
     }
 
     @PostMapping(value="/new_project")
-    void createNewProject(@RequestBody Project project) {
+    Project createNewProject(@RequestBody Project project) {
         System.out.println("project name: " + project.getProjectName());
-        projectRepository.save(project);
+        return projectRepository.save(project);
     }
 
     @DeleteMapping(value="/delete_project/{projectId}")

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router"
 import "./form_pages.css"
 import config from "../config";
 
@@ -21,6 +22,8 @@ export default function FormComponent({ loaderData }:
   const [statusMessage, setStatus] = useState(String);
   const [statusType, setStatusType] = useState(String); // 'success' or 'error'
 
+  const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -35,8 +38,13 @@ export default function FormComponent({ loaderData }:
 
       if (!response.ok) throw new Error('API request failed');
 
+      const createdProject: Project = await response.json();
+
       setStatus('Project submitted successfully!');
       setStatusType('success');
+
+      // Navigate to the project's details page
+      navigate(`/projects/${createdProject.id}`);
     } catch (error) {
       console.error('Submission error:', error);
       setStatus('Error submitting project.');
