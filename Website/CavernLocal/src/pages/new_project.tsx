@@ -28,7 +28,7 @@ export default function FormComponent({ loaderData }:
     e.preventDefault();
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/new_project`, {
+      const response = await fetch(`${config.API_BASE_URL}/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

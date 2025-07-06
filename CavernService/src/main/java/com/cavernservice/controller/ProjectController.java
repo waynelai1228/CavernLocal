@@ -22,29 +22,41 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/projects")
 public class ProjectController {
 
     @Autowired
     private ProjectRepository projectRepository;
 
-	@GetMapping(value="/projects", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value="", produces = MediaType.APPLICATION_JSON_VALUE)
 	List<Project> getProjects() {
         return projectRepository.findAll();
 	}
 
-    @GetMapping(value="/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    Project getProjectById(@PathVariable UUID projectId) {
-        return projectRepository.findById(projectId).get();
+    @GetMapping(value = "/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Project getProjectById(@PathVariable UUID projectId) {
+        return projectRepository.findById(projectId)
+            .orElseThrow(() -> new RuntimeException("Project not found"));
     }
 
-    @PostMapping(value="/new_project")
-    Project createNewProject(@RequestBody Project project) {
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    Project createProject(@RequestBody Project project) {
         System.out.println("project name: " + project.getProjectName());
         return projectRepository.save(project);
     }
 
-    @DeleteMapping(value="/delete_project/{projectId}")
+    @PutMapping(value = "/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Project updateProject(@PathVariable UUID projectId, @RequestBody Project updatedProject) {
+        return projectRepository.findById(projectId)
+            .map(existingProject -> {
+                existingProject.setProjectName(updatedProject.getProjectName());
+                // update other fields if needed
+                return projectRepository.save(existingProject);
+            })
+            .orElseThrow(() -> new RuntimeException("Project not found"));
+    }
+
+    @DeleteMapping(value="/{projectId}")
     void deleteProject(@PathVariable UUID projectId) {
         System.out.println("attempt to delete project with id: " + projectId);
         projectRepository.deleteById(projectId);

@@ -1,12 +1,18 @@
 // src/pages/project_detail.tsx
 import { useState, useEffect } from "react";
 import { useParams } from "react-router"; // or use react-router-dom
-import "./form_pages.css";
+import "./detail_pages.css";
 import config from "../config";
+import TaskDetail from "../components/TaskDetail";
+import TaskTile from "../components/TaskTile"
 
 interface Project {
   id: string;
   project_name: string;
+}
+interface Task {
+  id: string;
+  task_name: string;
 }
 function getErrorMessage(error: unknown): string {
   if (!error) return "";
@@ -49,14 +55,24 @@ export async function clientLoader({
   }
 }
 
+const tasks = [
+  { id: 1, name: 'Task One', description: 'This is task one.' },
+  { id: 2, name: 'Task Two', description: 'This is task two.' },
+  { id: 3, name: 'Task Three', description: 'This is task three.' },
+  { id: 4, name: 'Task Four', description: 'This is task four.' },
+  // Add more as needed
+];
+
 export default function FormComponent({ loaderData }:
   {
-    loaderData: { title: string; project: Project, error: unknown };
+    loaderData: { title: string; project: Project, tasks: Task; error: unknown };
   }
 ) {
   const { projectId } = useParams<{ projectId: string }>();
   const { title, project, error } = loaderData;
   const [errorMessage, setErrorMessage] = useState<string>(getErrorMessage(error));
+
+  const [selectedTask, setSelectedTask] = useState(null);
 
   // Update errorMessage whenever loaderData.error changes
   useEffect(() => {
@@ -72,15 +88,25 @@ export default function FormComponent({ loaderData }:
   }
 
   return (
-    <div className="form-page">
-      <h1>{title}</h1>
-      <div className="project-detail">
-        <label>ID: </label>
-        <span>{project.id}</span>
+    <div className="container">
+      <div className="sidebar">
+
+        <div className="project-header">
+          <div className="project-name">{project.project_name}</div>
+          <div className="project-id">Project ID: {project.id}</div>
+        </div>
+
+        {tasks.map((task) => (
+          <TaskTile
+            key={task.id}
+            task={task}
+            isSelected={selectedTask?.id === task.id}
+            onClick={() => setSelectedTask(task)}
+          />
+        ))}
       </div>
-      <div className="project-detail">
-        <label>Project Name: </label>
-        <span>{project.project_name}</span>
+      <div className="details">
+        <TaskDetail task={selectedTask} />
       </div>
     </div>
   );
