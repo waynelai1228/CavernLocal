@@ -9,10 +9,7 @@ import java.util.UUID;
 import com.cavernservice.type.TypeTask;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import org.apache.commons.exec.CommandLine;
 
@@ -21,17 +18,25 @@ public class Task {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
-  @JsonProperty("project_id")
-  private UUID projectId;
+
+  @ManyToOne(optional = false)
+  @JoinColumn(name = "project_id", nullable = false)
+  private Project project;
+
   @JsonProperty("task_name")
   private String taskName;
+
   @JsonProperty("task_description")
   private String taskDescription;
+
   @JsonProperty("task_action")
   private String taskAction;
+
   @JsonProperty("task_result")
   private String taskResult;
+
   @JsonProperty("task_type")
+  @Enumerated(EnumType.STRING)
   private TypeTask taskType;
 
   Task() {}
@@ -45,6 +50,10 @@ public class Task {
 
   public UUID getId() {
     return this.id;
+  }
+
+  public Project getProject() {
+    return project;
   }
 
   public String getTaskName() {
@@ -69,6 +78,10 @@ public class Task {
 
   public void setId(UUID id) {
     this.id = id;
+  }
+
+  public void setProject(Project project) {
+    this.project = project;
   }
 
   public void setTaskName(String taskName) {
