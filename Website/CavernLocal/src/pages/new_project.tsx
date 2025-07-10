@@ -1,12 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router"
-import "./form_pages.css"
+import { useNavigate } from "react-router";
+import "./form_pages.css";
 import config from "../config";
-
-interface Project {
-  id: string;
-  project_name: string;
-}
+import type { Project } from "../types/models";
 
 export async function clientLoader() {
     return {

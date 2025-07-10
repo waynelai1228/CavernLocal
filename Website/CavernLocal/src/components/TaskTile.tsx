@@ -6,7 +6,7 @@ export default function TaskTile({ task, isSelected, onClick }) {
       className={`tile ${isSelected ? 'active' : ''}`}
       onClick={onClick}
     >
-      {task.name}
+      {task.task_name}
     </div>
   );
 }

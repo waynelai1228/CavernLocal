@@ -1,19 +1,15 @@
-// src/pages/project_detail.tsx
 import { useState, useEffect } from "react";
-import { useParams } from "react-router"; // or use react-router-dom
-import "./detail_pages.css";
-import config from "../config";
-import TaskDetail from "../components/TaskDetail";
-import TaskTile from "../components/TaskTile"
 
-interface Project {
-  id: string;
-  project_name: string;
-}
-interface Task {
-  id: string;
-  task_name: string;
-}
+import "./detail_pages.css";
+
+import config from "../config";
+
+import TaskDetail from "../components/TaskDetail";
+import TaskTile from "../components/TaskTile";
+
+import type { Project, Task } from "../types/models";
+
+
 function getErrorMessage(error: unknown): string {
   if (!error) return "";
   if (typeof error === "string") return error;
@@ -34,45 +30,48 @@ export async function clientLoader({
       throw new Error("Project ID is required");
     }
 
+    // Fetch project
     const res = await fetch(`${config.API_BASE_URL}/projects/${projectId}`);
     if (!res.ok) {
       throw new Error(`Error fetching project: ${res.status}`);
     }
-
     const project: Project = await res.json();
+
+    // Fetch tasks for the project
+    const tasksRes = await fetch(`${config.API_BASE_URL}/projects/${projectId}/tasks`);
+    if (!tasksRes.ok) {
+      throw new Error(`Error fetching tasks: ${tasksRes.status}`);
+    }
+    const tasks: Task[] = await tasksRes.json();
+
     return {
       title: "Project Detail",
       project,
+      tasks,
       error: null,
     };
   } catch (err) {
-    console.error("Error fetching projects:", err);
+    console.error("Error fetching project or tasks:", err);
     return {
       title: "Error Fetching Project",
       project: null,
-      error: err.message || "Unknown error",
+      tasks: [],
+      error: err instanceof Error ? err.message : "Unknown error",
     };
   }
 }
 
-const tasks = [
-  { id: 1, name: 'Task One', description: 'This is task one.' },
-  { id: 2, name: 'Task Two', description: 'This is task two.' },
-  { id: 3, name: 'Task Three', description: 'This is task three.' },
-  { id: 4, name: 'Task Four', description: 'This is task four.' },
-  // Add more as needed
-];
-
 export default function FormComponent({ loaderData }:
   {
-    loaderData: { title: string; project: Project, tasks: Task; error: unknown };
+    loaderData: { title: string; project: Project, tasks: Task[]; error: unknown };
   }
 ) {
-  const { projectId } = useParams<{ projectId: string }>();
   const { title, project, error } = loaderData;
+  const [tasks, setTasks] = useState<Task[]>(loaderData.tasks);
   const [errorMessage, setErrorMessage] = useState<string>(getErrorMessage(error));
 
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isCreatingNewTask, setIsCreatingNewTask] = useState(false);
 
   // Update errorMessage whenever loaderData.error changes
   useEffect(() => {
@@ -85,6 +84,18 @@ export default function FormComponent({ loaderData }:
 
   if (!project) {
     return <div>Loading project...</div>;
+  }
+
+  function handleCreateNewClick() {
+    setSelectedTask(null); // Clear selected task
+    setIsCreatingNewTask(true); // Show new task form
+  }
+
+  // Callback to exit new task creation
+  function handleTaskSaved(newTask: Task) {
+    setIsCreatingNewTask(false);
+    setTasks(prev => [...prev, newTask]); // append new task to list
+    setSelectedTask(newTask); // select newly created task
   }
 
   return (
@@ -101,12 +112,20 @@ export default function FormComponent({ loaderData }:
             key={task.id}
             task={task}
             isSelected={selectedTask?.id === task.id}
-            onClick={() => setSelectedTask(task)}
+            onClick={() => {
+              setIsCreatingNewTask(false); // ensure when a tile is selected, exit create mode
+              setSelectedTask(task);
+            }}
           />
         ))}
       </div>
       <div className="details">
-        <TaskDetail task={selectedTask} />
+        <button onClick={handleCreateNewClick}>+ Create New Task</button>
+        <TaskDetail
+          task={isCreatingNewTask ? null : selectedTask}
+          onTaskSaved={handleTaskSaved}
+          projectId={project.id}
+        />
       </div>
     </div>
   );

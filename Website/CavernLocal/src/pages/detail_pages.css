@@ -66,3 +66,20 @@
   padding: 20px;
   overflow-y: auto;
 }
+
+  .details > button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 12px;
+    transition: background-color 0.3s;
+  }
+
+    .details > button:hover {
+      background-color: #666;
+    }

@@ -1,10 +1,7 @@
+import { useNavigate } from "react-router";
 import "./form_pages.css";
 import config from "../config";
-import { useNavigate } from 'react-router';
-interface Project {
-  id: string;
-  project_name: string;
-}
+import type { Project } from "../types/models";
 
 // clientLoader with error handling
 export async function clientLoader() {
@@ -18,7 +15,7 @@ export async function clientLoader() {
       throw new Error(`Failed to fetch projects: ${res.status} ${res.statusText}`);
     }
 
-    const projects = await res.json();
+    const projects: Project[] = await res.json();
 
     return {
       title: "Open Project",
@@ -38,7 +35,7 @@ export async function clientLoader() {
 // Component
 export default function Open_Project({ loaderData }:
   {
-    loaderData: { title: string; project: Project, error: unknown };
+    loaderData: { title: string; projects: Project[], error: unknown };
   }
 ) {
   const { title, projects, error } = loaderData;
