@@ -1,0 +1,18 @@
+.task-actions-panel {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid #ccc;
+  background-color: #f9f9f9;
+  display: flex;
+  gap: 0.5rem;
+}
+
+
+  .task-actions-panel > button {
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+    .task-actions-panel > button:hover {
+      background-color: #666;
+    }

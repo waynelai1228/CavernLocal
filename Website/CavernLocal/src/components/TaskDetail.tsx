@@ -1,44 +1,39 @@
 import React, { useState, useEffect } from "react";
 import './TaskDetail.css';
 import config from "../config";
-import { Task } from "../types/models"
-
+import { Task } from "../types/models";
 
 export default function TaskDetail({
   task,
   onTaskSaved,
+  onEditTask,
+  isEditing,
   projectId,
 }: {
-  task: Task | null;
+  task: Task;
   onTaskSaved?: (task: Task) => void;
+  onEditTask?: () => void;
+  isEditing: boolean;
   projectId: string;
 }) {
-  const [taskName, setTaskName] = useState(task?.task_name || "");
-  const [taskDescription, setTaskDescription] = useState(task?.task_description || "");
-  const [taskAction, setTaskAction] = useState(task?.task_action || "");
-  const [taskType, setTaskType] = useState(task?.task_type || "BASH"); // or your default
+  const [taskName, setTaskName] = useState(task.task_name);
+  const [taskDescription, setTaskDescription] = useState(task.task_description || "");
+  const [taskAction, setTaskAction] = useState(task.task_action || "");
+  const [taskType, setTaskType] = useState(task.task_type || "BASH");
 
   useEffect(() => {
-    if (task) {
-      setTaskName(task.task_name);
-      setTaskDescription(task.task_description || "");
-      setTaskAction(task.task_action || "");
-      setTaskType(task.task_type || "BASH");
-    } else {
-      // clear form for new task
-      setTaskName("");
-      setTaskDescription("");
-      setTaskAction("");
-      setTaskType("BASH");
-    }
+    setTaskName(task.task_name);
+    setTaskDescription(task.task_description || "");
+    setTaskAction(task.task_action || "");
+    setTaskType(task.task_type || "BASH");
   }, [task]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // POST to backend to create task
+
     try {
-      const res = await fetch(`${config.API_BASE_URL}/projects/${projectId}/tasks`, {
-        method: "POST",
+      const res = await fetch(`${config.API_BASE_URL}/projects/${projectId}/tasks/${task.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           task_name: taskName,
@@ -48,17 +43,16 @@ export default function TaskDetail({
         }),
       });
 
-      if (!res.ok) throw new Error(`Failed to create task: ${res.status}`);
+      if (!res.ok) throw new Error(`Failed to update task: ${res.status}`);
 
-      const createdTask = await res.json(); 
-      if (onTaskSaved) onTaskSaved(createdTask);;
+      const updatedTask = await res.json();
+      if (onTaskSaved) onTaskSaved(updatedTask);
     } catch (err) {
-      alert("Error creating task: " + (err instanceof Error ? err.message : "Unknown"));
+      alert("Error updating task: " + (err instanceof Error ? err.message : "Unknown"));
     }
   }
 
-  if (!task) {
-    // New Task form
+  if (isEditing) {
     return (
       <form className="task-detail-form" onSubmit={handleSubmit}>
         <label htmlFor="taskName">Task Name</label>
@@ -98,16 +92,21 @@ export default function TaskDetail({
           <option value="OTHER">OTHER</option>
         </select>
 
-        <button type="submit">Save Task</button>
+        <button type="submit">Save Changes</button>
       </form>
-
     );
   }
 
-  // Existing task details display/edit logic goes here when task != null
+  // Viewing mode
   return (
     <div className="task-detail">
-      <h2>{task.task_name}</h2>
+      <div className="task-header">
+        <h2>{task.task_name}</h2>
+        <button className="edit-task-button" onClick={onEditTask}>
+          Edit Task
+        </button>
+      </div>
+
       <div>{task.task_description}</div>
 
       <section className="task-action-result">

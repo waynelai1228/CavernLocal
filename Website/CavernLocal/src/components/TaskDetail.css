@@ -46,6 +46,37 @@
       background-color: #666;
     }
 
+.task-detail {
+  border: 1px solid #f9f9f9; /* Green bold border */
+  border-radius: 12px; /* Rounded edges */
+  padding: 1rem; /* Space inside the border */
+  margin-top: 1rem;
+  background-color: #333; /* Light background */
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.edit-task-button {
+  background-color: #ccc;
+  color: black;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+  .edit-task-button:hover {
+    background-color: #000000;
+    color: white;
+  }
+
+
 .task-action-result {
   margin-top: 20px;
   padding: 15px;

@@ -4,11 +4,12 @@ import "./detail_pages.css";
 
 import config from "../config";
 
+import CreateTaskForm from "../components/CreateTaskForm";
+import TaskActionsPanel from "../components/TaskActionsPanel";
 import TaskDetail from "../components/TaskDetail";
 import TaskTile from "../components/TaskTile";
 
 import type { Project, Task } from "../types/models";
-
 
 function getErrorMessage(error: unknown): string {
   if (!error) return "";
@@ -72,6 +73,7 @@ export default function FormComponent({ loaderData }:
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCreatingNewTask, setIsCreatingNewTask] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(false);
 
   // Update errorMessage whenever loaderData.error changes
   useEffect(() => {
@@ -86,16 +88,36 @@ export default function FormComponent({ loaderData }:
     return <div>Loading project...</div>;
   }
 
+  useEffect(() => {
+    if (selectedTask !== null) {
+      setIsCreatingNewTask(false);
+      setIsEditingTask(false);
+    }
+  }, [selectedTask]);
+
+
   function handleCreateNewClick() {
-    setSelectedTask(null); // Clear selected task
-    setIsCreatingNewTask(true); // Show new task form
+    setSelectedTask(null);
+    setIsEditingTask(false);
+    setIsCreatingNewTask(true);
   }
 
   // Callback to exit new task creation
   function handleTaskSaved(newTask: Task) {
     setIsCreatingNewTask(false);
-    setTasks(prev => [...prev, newTask]); // append new task to list
-    setSelectedTask(newTask); // select newly created task
+
+    setTasks(prev => {
+      const exists = prev.some(task => task.id === newTask.id);
+      if (exists) {
+        // update the existing task (e.g., replace it)
+        return prev.map(task => (task.id === newTask.id ? newTask : task));
+      } else {
+        // Append if not found
+        return [...prev, newTask];
+      }
+    });
+
+    setSelectedTask(newTask); // select the new or updated task
   }
 
   return (
@@ -120,12 +142,22 @@ export default function FormComponent({ loaderData }:
         ))}
       </div>
       <div className="details">
-        <button onClick={handleCreateNewClick}>+ Create New Task</button>
-        <TaskDetail
-          task={isCreatingNewTask ? null : selectedTask}
-          onTaskSaved={handleTaskSaved}
-          projectId={project.id}
-        />
+        <TaskActionsPanel onCreateNewTask={handleCreateNewClick} />
+
+        {isCreatingNewTask || !selectedTask ? (
+          <CreateTaskForm
+            projectId={project.id}
+            onTaskSaved={handleTaskSaved}
+          />
+        ) : (
+          <TaskDetail
+            task={selectedTask}
+            onTaskSaved={handleTaskSaved}
+            projectId={project.id}
+            onEditTask={() => setIsEditingTask(true)}
+            isEditing={isEditingTask}
+          />
+        )}
       </div>
     </div>
   );
