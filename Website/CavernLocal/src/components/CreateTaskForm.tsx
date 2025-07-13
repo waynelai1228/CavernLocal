@@ -39,7 +39,7 @@ export default function CreateTaskForm({
   }
 
   return (
-    <form className="task-detail-form" onSubmit={handleSubmit}>
+    <form className="task-detail-form task-form" onSubmit={handleSubmit}>
       <label htmlFor="taskName">Task Name</label>
       <input
         type="text"

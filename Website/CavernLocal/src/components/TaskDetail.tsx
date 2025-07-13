@@ -54,9 +54,14 @@ export default function TaskDetail({
     }
   }
 
+  function handleRunClick() {
+    // Optional: API call or local state update
+    console.log("Running task:", task.id);
+  }
+
   if (isEditing) {
     return (
-      <form className="task-detail-form" onSubmit={handleSubmit}>
+      <form className="edit-task-form task-form" onSubmit={handleSubmit}>
         <label htmlFor="taskName">Task Name</label>
         <input
           type="text"
@@ -121,18 +126,20 @@ export default function TaskDetail({
         </div>
       </div>
 
-      <div>{task.task_description}</div>
+      <div className="task-description">{task.task_description}</div>
 
       <section className="task-action-result">
-        <div className="task-action-section">
+        <div className="task-action-header">
           <h3>Task Action</h3>
-          <pre><code>{task.task_action}</code></pre>
+          <button className="task-button run" onClick={handleRunClick}>Run</button>
         </div>
 
-        <div className="task-result-section">
+        <div className="task-result-header">
           <h3>Task Result</h3>
-          <pre><code>{task.task_result || "No result yet."}</code></pre>
         </div>
+
+        <pre className="task-action-code"><code>{task.task_action}</code></pre>
+        <pre className="task-result-code"><code>{task.task_result || "No result yet."}</code></pre>
       </section>
     </div>
   );
