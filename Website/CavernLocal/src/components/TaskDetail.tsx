@@ -7,12 +7,14 @@ export default function TaskDetail({
   task,
   onTaskSaved,
   onEditTask,
+  onDeleteTask,
   isEditing,
   projectId,
 }: {
   task: Task;
   onTaskSaved?: (task: Task) => void;
   onEditTask?: () => void;
+  onDeleteTask?: (taskId: string) => void;
   isEditing: boolean;
   projectId: string;
 }) {
@@ -102,9 +104,21 @@ export default function TaskDetail({
     <div className="task-detail">
       <div className="task-header">
         <h2>{task.task_name}</h2>
-        <button className="edit-task-button" onClick={onEditTask}>
-          Edit Task
-        </button>
+        <div className="task-header-buttons">
+          <button className="task-button edit" onClick={onEditTask}>
+            Edit Task
+          </button>
+          <button
+            className="task-button delete"
+            onClick={() => {
+              if (window.confirm("Are you sure you want to delete this task?")) {
+                onDeleteTask?.(task.id);
+              }
+            }}
+          >
+            Delete Task
+          </button>
+        </div>
       </div>
 
       <div>{task.task_description}</div>

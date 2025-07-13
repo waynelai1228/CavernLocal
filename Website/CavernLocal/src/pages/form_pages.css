@@ -1,19 +1,28 @@
 .form-page {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* center horizontally */
   padding: 2rem;
   font-family: sans-serif;
+  width: 100vw;
+  box-sizing: border-box;
 }
 
 .form-heading {
   text-align: center;
   margin-bottom: 2rem;
+  color: #ccc; /* medium gray */
 }
 
 .form-content {
   width: 100%;
-  max-width: 400px;
+  max-width: 600px; /* moderate max width */
+  background-color: #2f2f2f;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #444;
+  box-sizing: border-box;
+  color: #ddd;
 }
 
 .form-group {
@@ -24,13 +33,23 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: bold;
+    color: #bbb; /* medium gray */
   }
 
   .form-group input {
     width: 100%;
     padding: 0.5rem;
     box-sizing: border-box;
+    background-color: #444; /* darker gray input */
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 14px;
   }
+
+    .form-group input::placeholder {
+      color: #888;
+    }
 
 .form-submit {
   text-align: center;
@@ -40,7 +59,17 @@
     padding: 0.5rem 1.5rem;
     font-size: 1rem;
     cursor: pointer;
+    background-color: #666; /* medium gray button */
+    color: #eee;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.3s;
   }
+
+    .form-submit input[type="submit"]:hover {
+      background-color: #888; /* lighter gray on hover */
+    }
 
 .form-status {
   text-align: center;
@@ -50,42 +79,46 @@
 }
 
   .form-status.success {
-    color: green;
+    color: #7fc97f; /* soft green */
   }
 
   .form-status.error {
-    color: red;
+    color: #cc4c4c; /* muted red */
   }
 
 .project-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  background-color: #2f2f2f; /* dark gray background */
+  color: #ddd;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
   .project-table th,
   .project-table td {
-    border: 1px solid #ddd;
+    border: 1px solid #444;
     padding: 8px;
   }
 
   .project-table th {
-    background-color: #808080;
-    color: black;
+    background-color: #555; /* medium dark gray */
+    color: #eee;
     text-align: left;
   }
 
-
   .project-table tr {
     cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
   }
 
     .project-table tr:hover {
-      background-color: #f0f0f0; /* Change row background when hovering */
-      color: black;
+      background-color: #666; /* lighter gray on hover */
+      color: #fff;
     }
 
     .project-table tr:active {
-      background-color: #dcdcdc; /* Slightly darker on click */
-      color: black;
+      background-color: #888; /* even lighter gray on click */
+      color: #fff;
     }

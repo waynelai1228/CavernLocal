@@ -1,18 +1,28 @@
 .task-actions-panel {
   margin-bottom: 1rem;
-  padding: 0.5rem;
-  border-bottom: 1px solid #ccc;
-  background-color: #f9f9f9;
+  padding: 1rem;
+  border: 1px solid #444; /* same dark gray border as .task-detail */
+  border-radius: 12px; /* same rounding as .task-detail */
+  background-color: #222; /* same very dark gray background as .task-detail */
   display: flex;
   gap: 0.5rem;
+  color: #ccc;
+  font-family: sans-serif;
 }
-
 
   .task-actions-panel > button {
     cursor: pointer;
-    transition: background-color 0.3s;
+    background-color: #555; /* medium dark gray button, matches .task-button.edit */
+    color: #eee;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.3s, color 0.3s;
   }
 
     .task-actions-panel > button:hover {
-      background-color: #666;
+      background-color: #777; /* lighter gray on hover */
+      color: white;
     }

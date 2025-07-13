@@ -120,6 +120,25 @@ export default function FormComponent({ loaderData }:
     setSelectedTask(newTask); // select the new or updated task
   }
 
+  async function handleDeleteTask(taskId: string) {
+    try {
+      const res = await fetch(`${config.API_BASE_URL}/projects/${project.id}/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete task: ${res.status}`);
+      }
+
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      setSelectedTask(null);
+      setIsEditingTask(false);
+      setIsCreatingNewTask(false);
+    } catch (err) {
+      setErrorMessage(getErrorMessage(err));
+    }
+  }
+
   return (
     <div className="container">
       <div className="sidebar">
@@ -153,6 +172,7 @@ export default function FormComponent({ loaderData }:
           <TaskDetail
             task={selectedTask}
             onTaskSaved={handleTaskSaved}
+            onDeleteTask={handleDeleteTask}
             projectId={project.id}
             onEditTask={() => setIsEditingTask(true)}
             isEditing={isEditingTask}
