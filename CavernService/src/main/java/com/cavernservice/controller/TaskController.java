@@ -42,6 +42,15 @@ public class TaskController {
         return taskRepository.save(task);
     }
 
+    @PostMapping(value = "/{taskId}/run", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Task runTask(@PathVariable UUID projectId, @PathVariable UUID taskId) {
+        Task task = taskRepository.findByIdAndProjectId(taskId, projectId)
+            .orElseThrow(() -> new RuntimeException("Task not found in project"));
+
+        task.run(); // Assuming run() modifies the task's state or result
+        return taskRepository.save(task); // Save any changes made by run()
+    }
+
     @PutMapping(value = "/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Task updateTask(@PathVariable UUID projectId,
                            @PathVariable UUID taskId,

@@ -54,9 +54,27 @@ export default function TaskDetail({
     }
   }
 
-  function handleRunClick() {
-    // Optional: API call or local state update
-    console.log("Running task:", task.id);
+  async function handleRunClick() {
+    try {
+      const res = await fetch(`${config.API_BASE_URL}/projects/${projectId}/tasks/${task.id}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (!res.ok) {
+        throw new Error(`Failed to run task: ${res.status}`);
+      }
+  
+      const updatedTask = await res.json();
+  
+      console.log("Task run successfully:", updatedTask);
+  
+      if (onTaskSaved) onTaskSaved(updatedTask); // Refresh task list or parent state
+    } catch (err) {
+      alert("Error running task: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
   }
 
   if (isEditing) {

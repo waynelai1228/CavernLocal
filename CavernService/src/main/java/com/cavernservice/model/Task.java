@@ -32,6 +32,7 @@ public class Task {
   @JsonProperty("task_action")
   private String taskAction;
 
+  @Column(name = "task_result", columnDefinition = "TEXT")
   @JsonProperty("task_result")
   private String taskResult;
 
