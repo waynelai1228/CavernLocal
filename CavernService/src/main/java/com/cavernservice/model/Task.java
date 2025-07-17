@@ -1,6 +1,7 @@
 package com.cavernservice.model;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Objects;
@@ -12,6 +13,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import org.apache.commons.exec.CommandLine;
+
+// Docker SDK:
+
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.model.Frame;
+
+// DockerContainerManager
+import com.cavernservice.service.DockerContainerManager;
+import com.github.dockerjava.api.model.StreamType;
+
 
 @Entity
 public class Task {
@@ -107,47 +120,82 @@ public class Task {
 
   public void run() {
     if (taskType == TypeTask.BASH) {
-      try {
-        // Detect OS
-        String os = System.getProperty("os.name").toLowerCase();
+        try {
+            // Ensure the task is only run on Linux
+            String os = System.getProperty("os.name").toLowerCase();
+            if (!os.contains("linux")) {
+                throw new UnsupportedOperationException("BASH tasks are only supported on Linux systems.");
+            }
 
-        if (!os.contains("linux")) {
-          throw new UnsupportedOperationException("BASH tasks are only supported on Linux systems.");
+            //// ** Defensive approach: Verify that taskAction is a valid bash command **
+            //if (!isValidBashCommand(taskAction)) {
+            //    throw new IllegalArgumentException("Invalid BASH command: potential security risk.");
+            //}
+
+            // Get Docker client and container ID
+            DockerClient dockerClient = DockerContainerManager.getClient();
+            String containerId = DockerContainerManager.getContainerId();
+
+            // Execute the task action in the container
+            ExecCreateCmdResponse execCreateCmdResponse = dockerClient.execCreateCmd(containerId)
+                .withCmd("bash", "-c", taskAction)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .exec();
+
+            // Declare output streams for capturing stdout and stderr
+            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+            // Use the ResultCallback Adapter to capture output
+            dockerClient.execStartCmd(execCreateCmdResponse.getId())
+                .exec(new ResultCallback.Adapter<Frame>() {
+                    @Override
+                    public void onNext(Frame frame) {
+                        try {
+                            if (frame.getStreamType() == StreamType.STDOUT) {
+                              byte[] framePayload = frame.getPayload();
+                              stdout.write(framePayload);
+                               // Dynamically update task result for stdout
+                              synchronized (Task.this) {
+                                taskResult = (taskResult == null ? "" : taskResult) + new String(framePayload);
+                              }
+                            } else if (frame.getStreamType() == StreamType.STDERR) {
+                              byte[] framePayload = frame.getPayload();
+                              stderr.write(framePayload);
+                              synchronized (Task.this) {
+                                taskResult = (taskResult == null ? "" : taskResult) + new String(framePayload);
+                              }
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException("Error while writing frame payload to output stream", e);
+                        }
+                    }
+                })
+                .awaitCompletion();  // Wait for the command to complete
+
+            // Set task result
+            if (stderr.size() > 0) {
+              // Capture stderr if any error occurred
+              synchronized (Task.this) {
+                taskResult = "Error: " + stderr.toString().trim();
+              }
+            } else {
+              // Otherwise, capture stdout
+              synchronized (Task.this) {
+                taskResult = stdout.toString().trim();
+              }
+            }
+
+        } catch (InterruptedException e) {
+            this.taskResult = "Execution failed: " + e.getMessage();
+            e.printStackTrace();
+        } catch (IllegalArgumentException | UnsupportedOperationException e) {
+            this.taskResult = "Validation failed: " + e.getMessage();
+            e.printStackTrace();
         }
-
-        // ******* DANGEROUS FUNCTIONALITY *********** //
-        // ** This contains OS Command Injection ** //
-        // ** Do not ever deploy to production system **//
-        // ******************************************* //
-
-        // take taskAction as bash command and run it
-        CommandLine cmdLine = CommandLine.parse(this.taskAction);
-        String[] arguments = cmdLine.toStrings();
-
-        ProcessBuilder builder = new ProcessBuilder(arguments);
-
-        Process process = builder.start();
-
-        // Read output
-        BufferedReader reader = new BufferedReader(
-          new InputStreamReader(process.getInputStream())
-        );
-
-        String line;
-        StringBuilder output = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-          output.append(line).append("\n");
-        }
-        // Store the result
-        this.taskResult = output.toString().trim();
-
-        int exitCode = process.waitFor();
-        System.out.println("Exited with code: " + exitCode);
-      } catch (IOException | InterruptedException e) {
-        e.printStackTrace();
-      }
     }
-  }
+}
 
   @Override
   public boolean equals(Object o) {
