@@ -69,6 +69,7 @@ public class DockerContainerManager {
             // Creating the container with updated configuration
             CreateContainerResponse container = dockerClient.createContainerCmd("ubuntu")
                 .withHostConfig(HostConfig.newHostConfig()
+                    .withAutoRemove(true)
                     .withNetworkMode("host"))
                 .withName("task-runner")
                 .withTty(true) // Keep bash open
