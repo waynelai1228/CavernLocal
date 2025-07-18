@@ -3,6 +3,7 @@ package com.cavernservice.service;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -67,6 +68,8 @@ public class DockerContainerManager {
 
             // Creating the container with updated configuration
             CreateContainerResponse container = dockerClient.createContainerCmd("ubuntu")
+                .withHostConfig(HostConfig.newHostConfig()
+                    .withNetworkMode("host"))
                 .withName("task-runner")
                 .withTty(true) // Keep bash open
                 .withCmd("bash", "-c", "while true; do sleep 60; done")
