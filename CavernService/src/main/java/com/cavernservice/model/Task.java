@@ -121,12 +121,6 @@ public class Task {
   public void run() {
     if (taskType == TypeTask.BASH) {
         try {
-            // Ensure the task is only run on Linux
-            String os = System.getProperty("os.name").toLowerCase();
-            if (!os.contains("linux")) {
-                throw new UnsupportedOperationException("BASH tasks are only supported on Linux systems.");
-            }
-
             //// ** Defensive approach: Verify that taskAction is a valid bash command **
             //if (!isValidBashCommand(taskAction)) {
             //    throw new IllegalArgumentException("Invalid BASH command: potential security risk.");

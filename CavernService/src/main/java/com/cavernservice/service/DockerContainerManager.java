@@ -81,6 +81,16 @@ public class DockerContainerManager {
             
             // Start the container after creation
             dockerClient.startContainerCmd(containerId).exec();
+
+            // Register shutdown hook to stop the container on JVM exit
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    dockerClient.stopContainerCmd(container.getId()).exec();
+                    System.out.println("Container stopped.");
+                } catch (Exception e) {
+                    System.err.println("Failed to stop container: " + e.getMessage());
+                }
+            }));
         } catch (Exception e) {
             e.printStackTrace();
         }
