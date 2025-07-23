@@ -4,9 +4,13 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.cavernservice.listener.TaskOutputListener;
 import com.cavernservice.type.TypeTask;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,19 +19,24 @@ import jakarta.persistence.*;
 import org.apache.commons.exec.CommandLine;
 
 // Docker SDK:
-
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.model.Frame;
+import com.github.dockerjava.api.model.StreamType;
+import com.github.dockerjava.core.command.ExecStartResultCallback;
 
 // DockerContainerManager
 import com.cavernservice.service.DockerContainerManager;
-import com.github.dockerjava.api.model.StreamType;
+
 
 
 @Entity
 public class Task {
+  
+  @Transient
+  private final List<TaskOutputListener> listeners = new CopyOnWriteArrayList<>();
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
@@ -118,6 +127,26 @@ public class Task {
     this.taskType = taskType;
   }
 
+  // Add a listener
+  public void addOutputListener(TaskOutputListener listener) {
+      if (!listeners.contains(listener)) {
+          listeners.add(listener);
+      }
+  }
+
+  // Remove a listener
+  public void removeOutputListener(TaskOutputListener listener) {
+    listeners.remove(listener);
+  }
+
+  // Notify all listeners of output
+  private void notifyListeners(String output, StreamType streamType) {
+    for (TaskOutputListener listener : listeners) {
+      listener.onOutput(output, streamType);
+    }
+  }
+
+
   public void run() {
     if (taskType == TypeTask.BASH) {
         try {
@@ -143,30 +172,30 @@ public class Task {
 
             // Use the ResultCallback Adapter to capture output
             dockerClient.execStartCmd(execCreateCmdResponse.getId())
-                .exec(new ResultCallback.Adapter<Frame>() {
-                    @Override
-                    public void onNext(Frame frame) {
-                        try {
-                            if (frame.getStreamType() == StreamType.STDOUT) {
-                              byte[] framePayload = frame.getPayload();
-                              stdout.write(framePayload);
-                               // Dynamically update task result for stdout
-                              synchronized (Task.this) {
-                                taskResult = (taskResult == null ? "" : taskResult) + new String(framePayload);
-                              }
-                            } else if (frame.getStreamType() == StreamType.STDERR) {
-                              byte[] framePayload = frame.getPayload();
-                              stderr.write(framePayload);
-                              synchronized (Task.this) {
-                                taskResult = (taskResult == null ? "" : taskResult) + new String(framePayload);
-                              }
-                            }
-                        } catch (IOException e) {
-                            throw new RuntimeException("Error while writing frame payload to output stream", e);
-                        }
+              .exec(new ExecStartResultCallback() {
+                @Override
+                public void onNext(Frame frame) {
+                  byte[] output = frame.getPayload();
+                  String outputStr = new String(output, StandardCharsets.UTF_8);
+                  StreamType type = frame.getStreamType();
+
+                    try {
+                      if (type == StreamType.STDOUT) {
+                        stdout.write(output);
+                      } else if (type == StreamType.STDERR) {
+                        stderr.write(output);
+                      }
+                    } catch (IOException e) {
+                      e.printStackTrace();
                     }
-                })
-                .awaitCompletion();  // Wait for the command to complete
+
+                    synchronized (Task.this) {
+                      taskResult = (taskResult == null ? "" : taskResult) + outputStr;
+                    }
+
+                    notifyListeners(outputStr, type);
+                }
+            }).awaitCompletion();
 
             // Set task result
             if (stderr.size() > 0) {

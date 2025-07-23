@@ -7,6 +7,8 @@ import com.cavernservice.model.Project;
 import com.cavernservice.model.Task;
 import com.cavernservice.repository.ProjectRepository;
 import com.cavernservice.repository.TaskRepository;
+import com.cavernservice.service.TaskService;
+import com.cavernservice.websocket.WebSocketOutputBroadcaster;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -21,6 +23,9 @@ public class TaskController {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private TaskService taskService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Task> getTasksByProject(@PathVariable UUID projectId) {
@@ -47,8 +52,8 @@ public class TaskController {
         Task task = taskRepository.findByIdAndProjectId(taskId, projectId)
             .orElseThrow(() -> new RuntimeException("Task not found in project"));
 
-        task.run(); // Assuming run() modifies the task's state or result
-        return taskRepository.save(task); // Save any changes made by run()
+        taskService.runTask(task);
+        return taskRepository.save(task);
     }
 
     @PutMapping(value = "/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE)

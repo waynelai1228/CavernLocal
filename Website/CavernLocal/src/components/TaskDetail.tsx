@@ -23,6 +23,9 @@ export default function TaskDetail({
   const [taskAction, setTaskAction] = useState(task.task_action || "");
   const [taskType, setTaskType] = useState(task.task_type || "BASH");
 
+  const [liveLogs, setLiveLogs] = useState<string[]>([]);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
   useEffect(() => {
     setTaskName(task.task_name);
     setTaskDescription(task.task_description || "");
@@ -56,26 +59,49 @@ export default function TaskDetail({
 
   async function handleRunClick() {
     try {
+      // clear output before getting new output
+      setLiveLogs([]);
+
       const res = await fetch(`${config.API_BASE_URL}/projects/${projectId}/tasks/${task.id}/run`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
-  
-      if (!res.ok) {
-        throw new Error(`Failed to run task: ${res.status}`);
-      }
-  
+
+      if (!res.ok) throw new Error(`Failed to run task: ${res.status}`);
       const updatedTask = await res.json();
-  
-      console.log("Task run successfully:", updatedTask);
-  
-      if (onTaskSaved) onTaskSaved(updatedTask); // Refresh task list or parent state
+      if (onTaskSaved) onTaskSaved(updatedTask);
+
+      // Open WebSocket connection for live output
+      const socket = new WebSocket(`${config.WS_BASE_URL}/ws/tasks/${task.id}/output`);
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          setLiveLogs((logs) => [...logs, `[${msg.stream}] ${msg.data}`]);
+        } catch (err) {
+          console.error("Invalid message from WebSocket:", event.data);
+        }
+      };
+
+      socket.onclose = () => {
+        setWs(null);
+      };
+
+      setWs(socket);
     } catch (err) {
       alert("Error running task: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (ws) {
+        ws.close();
+        console.log("WebSocket closed on component unmount.");
+      }
+    };
+  }, [ws]);
+
 
   if (isEditing) {
     return (
@@ -157,7 +183,13 @@ export default function TaskDetail({
         </div>
 
         <pre className="task-action-code"><code>{task.task_action}</code></pre>
-        <pre className="task-result-code"><code>{task.task_result || "No result yet."}</code></pre>
+        <pre className="task-result-code">
+          <code>
+            {liveLogs.length > 0
+              ? liveLogs.join('\n')
+              : (task.task_result || "No result yet.")}
+          </code>
+        </pre>
       </section>
     </div>
   );

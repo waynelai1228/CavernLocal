@@ -22,3 +22,11 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+/Website/CavernLocal/.react-router/types/src/pages/+types
+/Website/CavernLocal/.react-router/types/+register.ts
+/Website/CavernLocal/.react-router/types/+virtual.ts
+/.vs/CavernLocal/FileContentIndex
+/.vs/CavernLocal/v17
+/.vs
+/.vs/slnx.sqlite
+/Website/CavernLocal/.react-router/types/+register.ts
