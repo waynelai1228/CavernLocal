@@ -4,6 +4,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,7 +12,9 @@ import java.util.UUID;
 import com.cavernservice.CavernServiceApplication;
 import com.cavernservice.controller.ProjectController;
 import com.cavernservice.model.Project;
+import com.cavernservice.service.TaskService;
 import com.cavernservice.repository.ProjectRepository;
+import com.cavernservice.repository.TaskRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,16 +37,32 @@ public class ProjectControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+  @Autowired
+  private TaskService taskService;
 
-    @TestConfiguration
-    static class MockConfig {
-      @Bean
-      public ProjectRepository projectRepository() {
-        return mock(ProjectRepository.class);
-      }
+  @Autowired
+  private TaskRepository taskRepository;
+
+  @Autowired
+  private ProjectRepository projectRepository;
+
+  @TestConfiguration
+  static class MockConfig {
+    @Bean
+    public TaskRepository taskRepository() {
+      return mock(TaskRepository.class);
     }
+
+    @Bean
+    public ProjectRepository projectRepository() {
+      return mock(ProjectRepository.class);
+    }
+
+    @Bean
+    public TaskService taskService() {
+      return mock(TaskService.class);
+    }
+  }
 
     private Project sampleProject;
     private UUID sampleId;
@@ -55,6 +74,7 @@ public class ProjectControllerTest {
       sampleProject.setId(sampleId);
 
       clearInvocations(projectRepository);
+      clearInvocations(taskService);
     }
 
     @Test
@@ -116,5 +136,33 @@ public class ProjectControllerTest {
         .andExpect(status().isOk());
 
       verify(projectRepository, times(1)).deleteById(sampleId);
+    }
+
+    @Test
+    void testExportTasksSuccess() throws Exception {
+      String fakeFilePath = "/tmp/tasks-export.json";
+
+      when(taskService.exportTasksToJson(sampleId)).thenReturn(fakeFilePath);
+
+      mockMvc.perform(get("/projects/" + sampleId + "/export")
+          .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("Tasks exported"))
+        .andExpect(jsonPath("$.filePath").value(fakeFilePath));
+
+      verify(taskService, times(1)).exportTasksToJson(sampleId);
+    }
+
+    @Test
+    void testExportTasksFailure() throws Exception {
+      when(taskService.exportTasksToJson(sampleId)).thenThrow(new IOException("Disk is full"));
+
+      mockMvc.perform(get("/projects/" + sampleId + "/export")
+          .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isInternalServerError())
+        .andExpect(jsonPath("$.error").value("Failed to export tasks"))
+        .andExpect(jsonPath("$.details").value("Disk is full"));
+
+      verify(taskService, times(1)).exportTasksToJson(sampleId);
     }
 }

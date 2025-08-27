@@ -4,17 +4,9 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.cavernservice.CavernServiceApplication;
-import com.cavernservice.controller.TaskController;
-import com.cavernservice.model.Project;
-import com.cavernservice.model.Task;
-import com.cavernservice.repository.ProjectRepository;
-import com.cavernservice.repository.TaskRepository;
-import com.cavernservice.type.TypeTask;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +20,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.cavernservice.CavernServiceApplication;
+import com.cavernservice.controller.TaskController;
+import com.cavernservice.model.Project;
+import com.cavernservice.model.Task;
+import com.cavernservice.repository.ProjectRepository;
+import com.cavernservice.repository.TaskRepository;
+import com.cavernservice.service.TaskService;
+import com.cavernservice.type.TypeTask;
+
 @WebMvcTest(TaskController.class)
 @ContextConfiguration(classes = CavernServiceApplication.class)
 @Import(TaskControllerTest.MockConfig.class)
@@ -35,6 +36,9 @@ public class TaskControllerTest {
 
   @Autowired
   private MockMvc mockMvc;
+
+  @Autowired
+  private TaskService taskService;
 
   @Autowired
   private TaskRepository taskRepository;
@@ -52,6 +56,11 @@ public class TaskControllerTest {
     @Bean
     public ProjectRepository projectRepository() {
       return mock(ProjectRepository.class);
+    }
+
+    @Bean
+    public TaskService taskService() {
+      return mock(TaskService.class);
     }
   }
 
@@ -72,12 +81,12 @@ public class TaskControllerTest {
     sampleTask.setId(taskId);
     sampleTask.setProject(sampleProject);
 
-    clearInvocations(taskRepository, projectRepository);
+    clearInvocations(taskRepository, projectRepository, taskService);
   }
 
   @Test
   void testGetTasksByProject() throws Exception {
-    when(taskRepository.findByProjectId(projectId)).thenReturn(Arrays.asList(sampleTask));
+    when(taskRepository.findByProjectId(projectId)).thenReturn(List.of(sampleTask));
 
     mockMvc.perform(get("/projects/" + projectId + "/tasks"))
       .andExpect(status().isOk())
@@ -89,72 +98,169 @@ public class TaskControllerTest {
   }
 
   @Test
-  void testGetTaskById() throws Exception {
+  void testGetTaskById_Success() throws Exception {
     when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.of(sampleTask));
 
     mockMvc.perform(get("/projects/" + projectId + "/tasks/" + taskId))
       .andExpect(status().isOk())
-      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-      .andExpect(jsonPath("$.task_name").value("Sample Task"));
+      .andExpect(jsonPath("$.task_name").value("Sample Task"))
+      .andExpect(jsonPath("$.task_description").value("Do something"));
   }
 
   @Test
-  void testCreateTask() throws Exception {
+  void testGetTaskById_NotFound() throws Exception {
+    when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.empty());
+
+    mockMvc.perform(get("/projects/" + projectId + "/tasks/" + taskId))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("Task not found with ID " + projectId + " " + taskId));
+  }
+
+  @Test
+  void testCreateTask_Success() throws Exception {
     String json = """
-    {
-      "task_name": "New Task",
-      "task_description": "Something new",
-      "task_action": "ls -la",
-      "task_type": "BASH"
-    }
-    """;
+      {
+        "task_name": "New Task",
+        "task_description": "Something new",
+        "task_action": "ls -la",
+        "task_type": "BASH"
+      }
+      """;
 
     when(projectRepository.findById(projectId)).thenReturn(Optional.of(sampleProject));
-    when(taskRepository.save(any(Task.class))).thenReturn(sampleTask);
+    // Mock save to return a Task matching the input (simulate saved entity)
+    when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+      Task t = invocation.getArgument(0);
+      t.setId(taskId);
+      t.setProject(sampleProject);
+      return t;
+    });
 
     mockMvc.perform(post("/projects/" + projectId + "/tasks")
         .contentType(MediaType.APPLICATION_JSON)
         .content(json))
-      .andExpect(status().isOk());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.task_name").value("New Task"))
+      .andExpect(jsonPath("$.task_description").value("Something new"))
+      .andExpect(jsonPath("$.task_action").value("ls -la"))
+      .andExpect(jsonPath("$.task_type").value("BASH"));
 
-    verify(taskRepository, times(1)).save(any(Task.class));
+    verify(taskRepository).save(any(Task.class));
   }
 
   @Test
-  void testUpdateTask() throws Exception {
+  void testCreateTask_ProjectNotFound() throws Exception {
     String json = """
-    {
-      "task_name": "Updated Task",
-      "task_description": "Updated desc",
-      "task_action": "whoami",
-      "task_type": "BASH"
-    }
-    """;
+      {
+        "task_name": "New Task",
+        "task_description": "Something new",
+        "task_action": "ls -la",
+        "task_type": "BASH"
+      }
+      """;
 
-    Task updatedTask = new Task("Updated Task", "Updated desc", "whoami", TypeTask.BASH);
-    updatedTask.setId(taskId);
-    updatedTask.setProject(sampleProject);
+    when(projectRepository.findById(projectId)).thenReturn(Optional.empty());
+
+    mockMvc.perform(post("/projects/" + projectId + "/tasks")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("Project not found"));
+
+    verify(taskRepository, never()).save(any());
+  }
+
+  @Test
+  void testUpdateTask_Success() throws Exception {
+    String json = """
+      {
+        "task_name": "Updated Task",
+        "task_description": "Updated desc",
+        "task_action": "whoami",
+        "task_type": "BASH"
+      }
+      """;
 
     when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.of(sampleTask));
-    when(taskRepository.save(any(Task.class))).thenReturn(updatedTask);
+    when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     mockMvc.perform(put("/projects/" + projectId + "/tasks/" + taskId)
         .contentType(MediaType.APPLICATION_JSON)
         .content(json))
       .andExpect(status().isOk())
-      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-      .andExpect(jsonPath("$.task_name").value("Updated Task"));
+      .andExpect(jsonPath("$.task_name").value("Updated Task"))
+      .andExpect(jsonPath("$.task_description").value("Updated desc"))
+      .andExpect(jsonPath("$.task_action").value("whoami"))
+      .andExpect(jsonPath("$.task_type").value("BASH"));
 
-    verify(taskRepository, times(1)).save(any(Task.class));
+    verify(taskRepository).save(any(Task.class));
   }
 
   @Test
-  void testDeleteTask() throws Exception {
+  void testUpdateTask_NotFound() throws Exception {
+    String json = """
+      {
+        "task_name": "Updated Task",
+        "task_description": "Updated desc",
+        "task_action": "whoami",
+        "task_type": "BASH"
+      }
+      """;
+
+    when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.empty());
+
+    mockMvc.perform(put("/projects/" + projectId + "/tasks/" + taskId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(json))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("Task not found in project"));
+
+    verify(taskRepository, never()).save(any());
+  }
+
+  @Test
+  void testDeleteTask_Success() throws Exception {
     when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.of(sampleTask));
 
     mockMvc.perform(delete("/projects/" + projectId + "/tasks/" + taskId))
-      .andExpect(status().isOk());
+      .andExpect(status().isNoContent());
 
-    verify(taskRepository, times(1)).delete(sampleTask);
+    verify(taskRepository).delete(sampleTask);
+  }
+
+  @Test
+  void testDeleteTask_NotFound() throws Exception {
+    when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.empty());
+
+    mockMvc.perform(delete("/projects/" + projectId + "/tasks/" + taskId))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("Task not found in project"));
+
+    verify(taskRepository, never()).delete(any());
+  }
+
+  @Test
+  void testRunTask_Success() throws Exception {
+    when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.of(sampleTask));
+    when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    mockMvc.perform(post("/projects/" + projectId + "/tasks/" + taskId + "/run"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.task_name").value("Sample Task"));
+
+    verify(taskService).runTask(sampleTask);
+    verify(taskRepository).save(sampleTask);
+  }
+
+  @Test
+  void testRunTask_NotFound() throws Exception {
+    when(taskRepository.findByIdAndProjectId(taskId, projectId)).thenReturn(Optional.empty());
+
+    mockMvc.perform(post("/projects/" + projectId + "/tasks/" + taskId + "/run"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("Task not found in project"));
+
+    verify(taskService, never()).runTask(any());
+    verify(taskRepository, never()).save(any());
   }
 }

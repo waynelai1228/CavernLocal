@@ -98,6 +98,16 @@
           <artifactId>jackson-databind</artifactId>
         </dependency>
 
+
+        <!-- Mockito Inline for static mocking -->
+        <dependency>
+          <groupId>org.mockito</groupId>
+          <artifactId>mockito-inline</artifactId>
+          <version>4.11.0</version>
+          <!-- or latest -->
+          <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
