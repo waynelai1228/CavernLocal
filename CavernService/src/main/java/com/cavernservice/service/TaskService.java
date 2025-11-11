@@ -41,6 +41,7 @@ public class TaskService {
         // Define output path (e.g., temporary file)
         Path outputPath = Files.createTempFile("tasks-" + projectId, ".json");
 
+        System.out.println("outputing to: " + outputPath.toString());
         CavernFileWriter.writeTasksToFile(tasks, outputPath.toString());
 
         return outputPath.toString();

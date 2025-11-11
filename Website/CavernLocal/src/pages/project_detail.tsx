@@ -139,6 +139,104 @@ export default function FormComponent({ loaderData }:
     }
   }
 
+  async function handleImportTasks() {
+    try {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+
+      input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const text = await file.text();
+        let importedTasks: Partial<Task>[];
+
+        try {
+          importedTasks = JSON.parse(text);
+        } catch {
+          alert("Invalid JSON file format.");
+          return;
+        }
+
+        if (!Array.isArray(importedTasks)) {
+          alert("File must contain an array of tasks.");
+          return;
+        }
+
+        const createdTasks: Task[] = [];
+
+        for (const t of importedTasks) {
+          // Skip invalid entries
+          if (!t.task_name || !t.task_action) continue;
+
+          try {
+            const res = await fetch(
+              `${config.API_BASE_URL}/projects/${project.id}/tasks`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  task_name: t.task_name,
+                  task_description: t.task_description || "",
+                  task_action: t.task_action,
+                  task_type: t.task_type || "BASH",
+                }),
+              }
+            );
+
+            if (!res.ok) {
+              console.warn(`Failed to import task "${t.task_name}": ${res.status}`);
+              continue;
+            }
+
+            const newTask = (await res.json()) as Task;
+            createdTasks.push(newTask);
+          } catch (err) {
+            console.error("Error creating task:", err);
+          }
+        }
+
+        if (createdTasks.length > 0) {
+          setTasks((prev) => [...prev, ...createdTasks]);
+          alert(`Successfully imported ${createdTasks.length} tasks!`);
+        } else {
+          alert("No tasks were imported.");
+        }
+      };
+
+      input.click();
+    } catch (err) {
+      setErrorMessage(getErrorMessage(err));
+    }
+  }
+
+
+
+  async function handleExportTasks() {
+    try {
+      const res = await fetch(`${config.API_BASE_URL}/projects/${project.id}/export`);
+
+      if (!res.ok) {
+        throw new Error(`Failed to export tasks: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.filePath) {
+        // Optional: trigger file download if file is directly accessible
+        const link = document.createElement("a");
+        link.href = data.filePath;
+        link.download = "tasks_export.json";
+        link.click();
+      } else {
+        alert("Export successful, but no file path returned.");
+      }
+    } catch (err) {
+      setErrorMessage(getErrorMessage(err));
+    }
+  }
+
   return (
     <div className="container">
       <div className="sidebar">
@@ -161,7 +259,11 @@ export default function FormComponent({ loaderData }:
         ))}
       </div>
       <div className="details">
-        <TaskActionsPanel onCreateNewTask={handleCreateNewClick} />
+        <TaskActionsPanel
+          onCreateNewTask={handleCreateNewClick}
+          onExportTasks={handleExportTasks}
+          onImportTasks={handleImportTasks}
+        />
 
         {isCreatingNewTask || !selectedTask ? (
           <CreateTaskForm
