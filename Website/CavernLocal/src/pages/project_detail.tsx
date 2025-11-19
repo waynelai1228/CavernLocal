@@ -62,6 +62,8 @@ export async function clientLoader({
   }
 }
 
+type Mode = "none" | "create" | "view" | "edit";
+
 export default function FormComponent({ loaderData }:
   {
     loaderData: { title: string; project: Project, tasks: Task[]; error: unknown };
@@ -71,9 +73,8 @@ export default function FormComponent({ loaderData }:
   const [tasks, setTasks] = useState<Task[]>(loaderData.tasks);
   const [errorMessage, setErrorMessage] = useState<string>(getErrorMessage(error));
 
+  const [mode, setMode] = useState<Mode>("none");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isCreatingNewTask, setIsCreatingNewTask] = useState(false);
-  const [isEditingTask, setIsEditingTask] = useState(false);
 
   // Update errorMessage whenever loaderData.error changes
   useEffect(() => {
@@ -87,25 +88,22 @@ export default function FormComponent({ loaderData }:
   if (!project) {
     return <div>Loading project...</div>;
   }
+  function selectTask(task: Task) {
+    setSelectedTask(task);
+    setMode("view");
+  }
 
-  useEffect(() => {
-    if (selectedTask !== null) {
-      setIsCreatingNewTask(false);
-      setIsEditingTask(false);
-    }
-  }, [selectedTask]);
-
-
-  function handleCreateNewClick() {
+  function createNewTask() {
     setSelectedTask(null);
-    setIsEditingTask(false);
-    setIsCreatingNewTask(true);
+    setMode("create");
+  }
+
+  function startEdit() {
+    if (selectedTask) setMode("edit");
   }
 
   // Callback to exit new task creation
   function handleTaskSaved(newTask: Task) {
-    setIsCreatingNewTask(false);
-
     setTasks(prev => {
       const exists = prev.some(task => task.id === newTask.id);
       if (exists) {
@@ -117,7 +115,9 @@ export default function FormComponent({ loaderData }:
       }
     });
 
-    setSelectedTask(newTask); // select the new or updated task
+    // select & switch back to view mode
+    setSelectedTask(newTask);
+    setMode("view");
   }
 
   async function handleDeleteTask(taskId: string) {
@@ -131,9 +131,10 @@ export default function FormComponent({ loaderData }:
       }
 
       setTasks(prev => prev.filter(task => task.id !== taskId));
+
+      // Clear selection & mode
       setSelectedTask(null);
-      setIsEditingTask(false);
-      setIsCreatingNewTask(false);
+      setMode("none");
     } catch (err) {
       setErrorMessage(getErrorMessage(err));
     }
@@ -237,10 +238,45 @@ export default function FormComponent({ loaderData }:
     }
   }
 
+  // -----------------------------
+  //  RENDERING WITH UNIFIED MODE
+  // -----------------------------
+
+  let content = null;
+
+  if (mode === "create") {
+    content = (
+      <CreateTaskForm projectId={project.id} onTaskSaved={handleTaskSaved} />
+    );
+  } else if (mode === "view" && selectedTask) {
+    content = (
+      <TaskDetail
+        task={selectedTask}
+        onTaskSaved={handleTaskSaved}
+        onDeleteTask={handleDeleteTask}
+        projectId={project.id}
+        onEditTask={startEdit}
+        isEditing={false}
+      />
+    );
+  } else if (mode === "edit" && selectedTask) {
+    content = (
+      <TaskDetail
+        task={selectedTask}
+        onTaskSaved={handleTaskSaved}
+        onDeleteTask={handleDeleteTask}
+        projectId={project.id}
+        onEditTask={() => { }}
+        isEditing={true}
+      />
+    );
+  } else {
+    content = <div>Select a task or create a new one.</div>;
+  }
+
   return (
     <div className="container">
       <div className="sidebar">
-
         <div className="project-header">
           <div className="project-name">{project.project_name}</div>
           <div className="project-id">Project ID: {project.id}</div>
@@ -251,35 +287,19 @@ export default function FormComponent({ loaderData }:
             key={task.id}
             task={task}
             isSelected={selectedTask?.id === task.id}
-            onClick={() => {
-              setIsCreatingNewTask(false); // ensure when a tile is selected, exit create mode
-              setSelectedTask(task);
-            }}
+            onClick={() => selectTask(task)}
           />
         ))}
       </div>
+
       <div className="details">
         <TaskActionsPanel
-          onCreateNewTask={handleCreateNewClick}
+          onCreateNewTask={createNewTask}
           onExportTasks={handleExportTasks}
           onImportTasks={handleImportTasks}
         />
 
-        {isCreatingNewTask || !selectedTask ? (
-          <CreateTaskForm
-            projectId={project.id}
-            onTaskSaved={handleTaskSaved}
-          />
-        ) : (
-          <TaskDetail
-            task={selectedTask}
-            onTaskSaved={handleTaskSaved}
-            onDeleteTask={handleDeleteTask}
-            projectId={project.id}
-            onEditTask={() => setIsEditingTask(true)}
-            isEditing={isEditingTask}
-          />
-        )}
+        {content}
       </div>
     </div>
   );
