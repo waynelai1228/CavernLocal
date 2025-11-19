@@ -6,6 +6,7 @@ import config from "../config";
 
 import CreateTaskForm from "../components/CreateTaskForm";
 import TaskActionsPanel from "../components/TaskActionsPanel";
+import EnvironmentVarsPanel from "../components/EnvironmentVarsPanel";
 import TaskDetail from "../components/TaskDetail";
 import TaskTile from "../components/TaskTile";
 
@@ -62,7 +63,7 @@ export async function clientLoader({
   }
 }
 
-type Mode = "none" | "create" | "view" | "edit";
+type Mode = "none" | "create" | "view" | "edit" | "env";
 
 export default function FormComponent({ loaderData }:
   {
@@ -96,6 +97,10 @@ export default function FormComponent({ loaderData }:
   function createNewTask() {
     setSelectedTask(null);
     setMode("create");
+  }
+  function openEnvVars() {
+    setSelectedTask(null);
+    setMode("env");
   }
 
   function startEdit() {
@@ -270,6 +275,10 @@ export default function FormComponent({ loaderData }:
         isEditing={true}
       />
     );
+  } else if (mode === "env") {
+    content = (
+      <EnvironmentVarsPanel projectId={project.id} />
+    );
   } else {
     content = <div>Select a task or create a new one.</div>;
   }
@@ -297,8 +306,8 @@ export default function FormComponent({ loaderData }:
           onCreateNewTask={createNewTask}
           onExportTasks={handleExportTasks}
           onImportTasks={handleImportTasks}
+          onOpenEnvVars={openEnvVars}
         />
-
         {content}
       </div>
     </div>
